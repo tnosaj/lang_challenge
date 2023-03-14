@@ -1,0 +1,32 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: tnosaj/lang-api
+          flavor: latest=true
+    - name: docker login
+      env:
+        DOCKER_USER: ${{secrets.DOCKER_USER}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag tnosaj/lang-api:$(date +%s)
+    - name: Docker Push
+      run: docker push tnosaj/lang-api
