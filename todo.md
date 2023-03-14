@@ -3,12 +3,12 @@
 No particular order
 
 ## Code
-* set contexts (e.g. timeouts)
-* Get code should sanitize inputs
-* max concurrency (http 429)?
-* redis connection timeout
-* redis connection pooling
+* ~set contexts (e.g. timeouts)~
+* ~Get code should sanitize inputs~ (a bit hard with pure go, switch to router?)
+* ~redis connection timeout~
+* ~redis connection pooling~
 * stop accepting on redis errors OR fail faster (background redis checks)
+* max concurrency (http 429)?
 
 ### Metrics
 * ~redis latency metrics~ [MR](https://github.com/tnosaj/lang_challenge/pull/2)
