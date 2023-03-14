@@ -9,14 +9,16 @@ import (
 
 	"github.com/alicebob/miniredis"
 	"github.com/go-redis/redis/v9"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tj/assert"
 )
 
 func TestOrdersRepo_Save(t *testing.T) {
-	setup()
+	repo := setup()
 	defer teardown()
 	type fields struct {
-		c *redis.Client
+		c       *redis.Client
+		Metrics domain.OrderMetrics
 	}
 	type args struct {
 		ctx   context.Context
@@ -31,7 +33,8 @@ func TestOrdersRepo_Save(t *testing.T) {
 		{
 			name: "ok",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -45,7 +48,8 @@ func TestOrdersRepo_Save(t *testing.T) {
 		{
 			name: "nok",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				ctx:   context.TODO(),
@@ -57,7 +61,8 @@ func TestOrdersRepo_Save(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &OrdersRepo{
-				c: tt.fields.c,
+				c:       tt.fields.c,
+				Metrics: tt.fields.Metrics,
 			}
 			if err := r.Save(tt.args.ctx, tt.args.order); (err != nil) != tt.wantErr {
 				t.Errorf("OrdersRepo.Save() error = %v, wantErr %v", err, tt.wantErr)
@@ -65,7 +70,7 @@ func TestOrdersRepo_Save(t *testing.T) {
 				// we had no error
 
 				var order domain.Order
-				result, _ := redisClient.Get(tt.args.ctx, tt.args.order.ID).Result()
+				result, _ := r.c.Get(tt.args.ctx, tt.args.order.ID).Result()
 				err = json.Unmarshal([]byte(result), &order)
 
 				assert.True(t, reflect.DeepEqual(tt.args.order, order), "expect orders from redis to equal input")
@@ -75,10 +80,11 @@ func TestOrdersRepo_Save(t *testing.T) {
 }
 
 func TestOrdersRepo_Get(t *testing.T) {
-	setup()
+	repo := setup()
 	defer teardown()
 	type fields struct {
-		c *redis.Client
+		c       *redis.Client
+		Metrics domain.OrderMetrics
 	}
 	type args struct {
 		ctx context.Context
@@ -94,7 +100,8 @@ func TestOrdersRepo_Get(t *testing.T) {
 		{
 			name: "ok",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -109,7 +116,8 @@ func TestOrdersRepo_Get(t *testing.T) {
 		{
 			name: "nok",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -122,12 +130,13 @@ func TestOrdersRepo_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &OrdersRepo{
-				c: tt.fields.c,
+				c:       tt.fields.c,
+				Metrics: tt.fields.Metrics,
 			}
 			if tt.wantErr == false {
 				// put into mock redis
 				serlializedOrder, _ := json.Marshal(domain.Order{ID: tt.args.id, Status: "Tested"})
-				redisClient.Set(context.TODO(), tt.args.id, serlializedOrder, 0).Err()
+				r.c.Set(context.TODO(), tt.args.id, serlializedOrder, 0).Err()
 			}
 
 			got, err := r.Get(tt.args.ctx, tt.args.id)
@@ -143,8 +152,11 @@ func TestOrdersRepo_Get(t *testing.T) {
 }
 
 func TestOrdersRepo_Valid(t *testing.T) {
+	repo := setup()
+	defer teardown()
 	type fields struct {
-		c *redis.Client
+		c       *redis.Client
+		Metrics domain.OrderMetrics
 	}
 	type args struct {
 		order domain.Order
@@ -158,7 +170,8 @@ func TestOrdersRepo_Valid(t *testing.T) {
 		{
 			name: "ok",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				order: domain.Order{
@@ -171,7 +184,8 @@ func TestOrdersRepo_Valid(t *testing.T) {
 		{
 			name: "nok: empty",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				order: domain.Order{},
@@ -181,7 +195,8 @@ func TestOrdersRepo_Valid(t *testing.T) {
 		{
 			name: "nok: no status",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				order: domain.Order{
@@ -193,7 +208,8 @@ func TestOrdersRepo_Valid(t *testing.T) {
 		{
 			name: "nok: no id",
 			fields: fields{
-				c: redisClient,
+				c:       repo.c,
+				Metrics: repo.Metrics,
 			},
 			args: args{
 				order: domain.Order{
@@ -206,7 +222,8 @@ func TestOrdersRepo_Valid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &OrdersRepo{
-				c: tt.fields.c,
+				c:       tt.fields.c,
+				Metrics: tt.fields.Metrics,
 			}
 			if got := r.ValidOrder(tt.args.order); got != tt.want {
 				t.Errorf("OrdersRepo.Valid() = %v, want %v", got, tt.want)
@@ -216,7 +233,6 @@ func TestOrdersRepo_Valid(t *testing.T) {
 }
 
 var redisServer *miniredis.Miniredis
-var redisClient *redis.Client
 
 func mockRedis() *miniredis.Miniredis {
 	s, err := miniredis.Run()
@@ -230,11 +246,31 @@ func mockRedis() *miniredis.Miniredis {
 
 func setup() OrdersRepo {
 	redisServer = mockRedis()
-	redisClient = redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisServer.Addr(),
 	})
+	redisRequestDuration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "redis_request_duration_seconds",
+		Help:    "Histogram for the runtime of a simple method function.",
+		Buckets: prometheus.LinearBuckets(0.00, 0.002, 75),
+	}, []string{"function"})
+
+	redisErrorReuests := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "cache_error_requests",
+			Help: "The total number of failed requests",
+		},
+		[]string{"function"},
+	)
+	prometheus.MustRegister(redisRequestDuration)
+	prometheus.MustRegister(redisErrorReuests)
+
 	return OrdersRepo{
 		c: redisClient,
+		Metrics: domain.OrderMetrics{
+			RedisLatency: redisRequestDuration,
+			RedisErrors:  redisErrorReuests,
+		},
 	}
 }
 func teardown() {
