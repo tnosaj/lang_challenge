@@ -12,6 +12,7 @@ type Server struct {
 	repo domain.OrdersRepo
 }
 
+// NewServer returns a Server with a repo for the OrdersRepo domain
 func NewServer(repo domain.OrdersRepo) *Server {
 	res := &Server{
 		repo: repo,
@@ -19,6 +20,7 @@ func NewServer(repo domain.OrdersRepo) *Server {
 	return res
 }
 
+// Create will create a new order and save it to redis, returning the order.ID
 func (s Server) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	order := domain.Order{

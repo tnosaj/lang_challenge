@@ -1,7 +1,6 @@
 package domain
 
 type Order struct {
-	ID     string
-	Status string
+	ID     string `json:"ID" validate:"required"`
+	Status string `json:"Status" validate:"required"`
 }
-
