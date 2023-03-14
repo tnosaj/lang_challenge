@@ -24,3 +24,4 @@ jobs:
       with: 
         image: docker.io/tnosaj/lang-api
         tags: latest
+        push: true
