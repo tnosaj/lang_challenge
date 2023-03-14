@@ -20,6 +20,7 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USER }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag docker.io/tnosaj/lang-api:$(date +%s)
-    - name: Docker Push
-      run: docker push docker.io/tnosaj/lang-api
+      uses: docker/build-push-action@v3
+      with: 
+        image: docker.io/tnosaj/lang-api
+        tags: latest
