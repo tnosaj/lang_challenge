@@ -25,15 +25,11 @@ No particular order
 ## Deployment
 
 ### Redis
-* maxmemory
-* authentication
-
-### DR
-* redis HA
-* redis backups
+* ~maxmemory~ [MR](https://github.com/tnosaj/lang_challenge/pull/4)
+* ~authentication~ [MR](https://github.com/tnosaj/lang_challenge/pull/4)
 
 ### runtime
-* replace docker-compose
+* ~replace docker-compose~ [MR](https://github.com/tnosaj/lang_challenge/pull/4)
 
 ## Automation
 * Add automatic build pipeline (github actions/gitlab ci)
@@ -41,3 +37,6 @@ No particular order
 # Outside the scope
 * observability platform
 * container runtime
+* redis HA - related to container runtime
+* redis backups - related to container runtime
+
