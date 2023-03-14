@@ -6,16 +6,37 @@ import (
 	"store/pkg/domain"
 	"store/pkg/utils"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Server struct {
-	repo domain.OrdersRepo
+	repo    domain.OrdersRepo
+	Metrics ServerMetrics
+}
+
+type ServerMetrics struct {
+	HttpErrors *prometheus.CounterVec
 }
 
 // NewServer returns a Server with a repo for the OrdersRepo domain
 func NewServer(repo domain.OrdersRepo) *Server {
+
+	httpErrorReuests := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_error_requests",
+			Help: "The total number of failed http requests",
+		},
+		[]string{"function"},
+	)
+
+	prometheus.MustRegister(httpErrorReuests)
+
 	res := &Server{
 		repo: repo,
+		Metrics: ServerMetrics{
+			HttpErrors: httpErrorReuests,
+		},
 	}
 	return res
 }
@@ -29,6 +50,7 @@ func (s Server) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	err := s.repo.Save(ctx, order)
 	if err != nil {
+		s.Metrics.HttpErrors.WithLabelValues("Create").Inc()
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -46,12 +68,14 @@ func (s Server) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	order, err := s.repo.Get(ctx, id)
 	if err != nil {
+		s.Metrics.HttpErrors.WithLabelValues("Get").Inc()
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 	body, err := json.Marshal(order)
 	if err != nil {
+		s.Metrics.HttpErrors.WithLabelValues("Get").Inc()
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
