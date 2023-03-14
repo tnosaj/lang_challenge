@@ -1,11 +1,13 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"store/pkg/domain"
 	"store/pkg/utils"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -43,7 +45,10 @@ func NewServer(repo domain.OrdersRepo) *Server {
 
 // Create will create a new order and save it to redis, returning the order.ID
 func (s Server) Create(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	// timeout context
+	ctx, cancel := context.WithTimeout(r.Context(), time.Microsecond*200)
+	defer cancel()
+
 	order := domain.Order{
 		ID:     utils.NewID(),
 		Status: "CREATED",
@@ -60,14 +65,26 @@ func (s Server) Create(w http.ResponseWriter, r *http.Request) {
 
 // Get will try to fetch the order by the ID provided in the url
 func (s Server) Get(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	// timeout context
+	ctx, cancel := context.WithTimeout(r.Context(), time.Microsecond*200)
+	defer cancel()
+
 	var id string
+
+	// potentially use a different router to avoid this
 	parts := strings.Split(r.URL.String(), "/")
-	if len(parts) > 2 {
+	if len(parts) == 3 {
 		id = parts[2]
+	} else {
+		s.Metrics.HttpErrors.WithLabelValues("BadRequest").Inc()
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	order, err := s.repo.Get(ctx, id)
 	if err != nil {
+		if err.Error() == "not found" {
+			w.WriteHeader(http.StatusNotFound)
+		}
 		s.Metrics.HttpErrors.WithLabelValues("Get").Inc()
 		w.WriteHeader(http.StatusInternalServerError)
 		return

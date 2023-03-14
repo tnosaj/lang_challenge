@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"store/pkg/domain"
+	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/go-redis/redis/v9"
@@ -18,7 +20,7 @@ type OrdersRepo struct {
 	Metrics domain.OrderMetrics
 }
 
-func NewOrdersRepo(addr string) *OrdersRepo {
+func NewOrdersRepo(addr, password string, poolSize, timeout int) *OrdersRepo {
 
 	redisRequestDuration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "redis_request_duration_seconds",
@@ -37,7 +39,16 @@ func NewOrdersRepo(addr string) *OrdersRepo {
 	prometheus.MustRegister(redisRequestDuration)
 	prometheus.MustRegister(redisErrorReuests)
 
-	c := redis.NewClient(&redis.Options{Addr: addr})
+	c := redis.NewClient(
+		&redis.Options{
+			Addr:         addr,
+			Password:     password,
+			PoolSize:     poolSize,
+			DialTimeout:  time.Second * time.Duration(timeout),
+			ReadTimeout:  time.Second * time.Duration(timeout),
+			WriteTimeout: time.Second * time.Duration(timeout),
+		},
+	)
 	res := &OrdersRepo{
 		c: c,
 		Metrics: domain.OrderMetrics{
@@ -72,8 +83,13 @@ func (r *OrdersRepo) Save(ctx context.Context, order domain.Order) error {
 func (r *OrdersRepo) Get(ctx context.Context, id string) (domain.Order, error) {
 	timer := prometheus.NewTimer(r.Metrics.RedisLatency.WithLabelValues("Get"))
 	serlializedOrder, err := r.c.Get(ctx, id).Result()
+	if err == redis.Nil {
+		r.Metrics.RedisErrors.WithLabelValues("EmptyGet").Inc()
+		timer.ObserveDuration()
+		return domain.Order{}, fmt.Errorf("not found")
+	}
 	if err != nil {
-		r.Metrics.RedisErrors.WithLabelValues("GetSerialize").Inc()
+		r.Metrics.RedisErrors.WithLabelValues("Get").Inc()
 		timer.ObserveDuration()
 		return domain.Order{}, err
 	}
@@ -97,4 +113,14 @@ func (r *OrdersRepo) ValidOrder(order domain.Order) bool {
 		return false
 	}
 	return true
+}
+
+func (r *OrdersRepo) Shutdown(ctx context.Context) {
+	// teh lolz, thanks examples...
+	// if err := c.RedisNative.FlushAll(ctx).Err(); err != nil {
+	//   logrus.Fatalf("goredis - failed to flush: %v", err)
+	// }
+	if err := r.c.Close(); err != nil {
+		log.Fatalf("goredis - failed to communicate to redis-server: %v", err)
+	}
 }
