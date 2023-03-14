@@ -3,8 +3,10 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"store/pkg/domain"
 
+	"github.com/go-playground/validator"
 	"github.com/go-redis/redis/v9"
 )
 
@@ -22,6 +24,9 @@ func NewOrdersRepo(addr string) *OrdersRepo {
 
 // Save stores an order in redis using its ID as the key
 func (r *OrdersRepo) Save(ctx context.Context, order domain.Order) error {
+	if !r.ValidOrder(order) {
+		return fmt.Errorf("Not a valid order")
+	}
 	serlializedOrder, err := json.Marshal(order)
 	if err != nil {
 		return err
@@ -37,10 +42,20 @@ func (r *OrdersRepo) Get(ctx context.Context, id string) (domain.Order, error) {
 	if err != nil {
 		return domain.Order{}, err
 	}
+
 	var order domain.Order
 	err = json.Unmarshal([]byte(serlializedOrder), &order)
 	if err != nil {
 		return domain.Order{}, err
 	}
 	return order, nil
+}
+
+func (r *OrdersRepo) ValidOrder(order domain.Order) bool {
+	validate := validator.New()
+	err := validate.Struct(order)
+	if err != nil {
+		return false
+	}
+	return true
 }
