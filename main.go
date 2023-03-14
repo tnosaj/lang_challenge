@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,9 +13,29 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+
+	loglevel := utils.GetEnv("LOG_LEVEL", "warn")
+
+	log.SetReportCaller(false)
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+	switch loglevel {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	default:
+		log.SetLevel(log.WarnLevel)
+	}
+	log.Debug("Configured logger")
+
 	redisAddr := utils.GetEnv("REDIS_ADDR", "localhost:6379")
 	port := utils.GetEnv("STORE_PORT", "8080")
 
@@ -34,7 +53,6 @@ func main() {
 	}
 
 	timeout, err := strconv.Atoi(utils.GetEnv("TIMEOUT", "10"))
-
 	if err != nil {
 		// Fail fast
 		log.Fatalf("Can not convert TIMEOUT env var to int")
@@ -49,7 +67,7 @@ func main() {
 	mux := http.NewServeMux()
 	setupRoutes(mux, server)
 
-	fmt.Println("start")
+	log.Info("start")
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("0.0.0.0:%s", port),
@@ -63,7 +81,7 @@ func main() {
 	// Run our http server in a goroutine so that it doesn't block.
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Println(err)
+			log.Fatal(err)
 		}
 	}()
 
