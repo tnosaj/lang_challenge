@@ -1,0 +1,30 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: api
+  namespace: lang
+  labels:
+    app: api
+    prometheus: prometheus-agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: "api"
+  podMetricsEndpoints:
+    - port: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: redis
+  namespace: lang
+  labels:
+    app: redis
+    prometheus: prometheus-agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: "redis"
+  podMetricsEndpoints:
+    - port: metrics
