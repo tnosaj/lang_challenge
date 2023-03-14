@@ -11,8 +11,8 @@ No particular order
 * stop accepting on redis errors OR fail faster (background redis checks)
 
 ### Metrics
-* redis latency metrics
-* add counters for `err != nil` with tags for locations in code
+* ~redis latency metrics~ [MR](https://github.com/tnosaj/lang_challenge/pull/2)
+* ~add counters for `err != nil` with tags for locations in code~ [MR](https://github.com/tnosaj/lang_challenge/pull/2)
 * make metrics an interface (swap out metric in 1 place)
 
 ### Logging
