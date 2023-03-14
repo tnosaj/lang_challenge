@@ -4,7 +4,7 @@ No particular order
 
 ## Code
 * ~set contexts (e.g. timeouts)~
-* ~Get code should sanitize inputs~ (a bit hard with pure go, switch to router?)
+* ~Get code should sanitize inputs~ (a bit hard with pure go, switch to a non standard router?)
 * ~redis connection timeout~
 * ~redis connection pooling~
 * stop accepting on redis errors OR fail faster (background redis checks)
@@ -32,11 +32,11 @@ No particular order
 * ~replace docker-compose~ [MR](https://github.com/tnosaj/lang_challenge/pull/4)
 
 ## Automation
-* Add automatic build pipeline (github actions/gitlab ci)
+* ~Add automatic build pipeline (github actions/gitlab ci)~ [MR](https://github.com/tnosaj/lang_challenge/pull/5) (not a huge fan of github actions yet...)
 
 # Outside the scope
-* observability platform
-* container runtime
-* redis HA - related to container runtime
-* redis backups - related to container runtime
+* observability platform - e.g. https://github.com/prometheus-operator/prometheus-operator ... pod/svc monitors already exist
+* container runtime - full fledged k8s? I tested on minikube
+* redis HA - related to container runtime - e.g. https://github.com/ot-container-kit/redis-operator ... not a lot of information about redis operators honestly
+* redis backups - related to container runtime - disk snapshots, replica snapshots, etc.
 
