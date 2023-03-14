@@ -27,6 +27,7 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: docker.io/tnosaj/lang-api
+        flavor: latest=true
       
     - name: Build and push Docker image
       uses: docker/build-push-action@v3
