@@ -4,6 +4,8 @@ services:
     build: .
     environment:
       - REDIS_ADDR=redis:6379
+      - REDIS_PASS=foo
+      - LOG_LEVEL=debug
       - STORE_PORT=8080
     ports:
       - "8080:8080"
@@ -11,4 +13,4 @@ services:
     image: "redis:7.0.7"
     ports:
       -  "6379:6739"
-
+    command: --maxmemory 64Mb --requirepass foo
