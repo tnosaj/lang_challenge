@@ -46,7 +46,7 @@ func NewServer(repo domain.OrdersRepo) *Server {
 
 // Create will create a new order and save it to redis, returning the order.ID
 func (s Server) Create(w http.ResponseWriter, r *http.Request) {
-	log.Trace("Start Create %v", r)
+	log.Tracef("Start Create %v", r)
 	// timeout context
 	ctx, cancel := context.WithTimeout(r.Context(), time.Microsecond*200)
 	defer cancel()
@@ -64,12 +64,12 @@ func (s Server) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(order.ID))
-	log.Trace("End Create %v", r)
+	log.Tracef("End Create %v", r)
 }
 
 // Get will try to fetch the order by the ID provided in the url
 func (s Server) Get(w http.ResponseWriter, r *http.Request) {
-	log.Trace("Start Get %v", r)
+	log.Tracef("Start Get %v", r)
 	// timeout context
 	ctx, cancel := context.WithTimeout(r.Context(), time.Microsecond*200)
 	defer cancel()
@@ -107,6 +107,6 @@ func (s Server) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(body)
-	log.Trace("End Get %v", r)
+	log.Tracef("End Get %v", r)
 	return
 }

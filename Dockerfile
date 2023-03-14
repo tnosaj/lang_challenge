@@ -16,6 +16,9 @@ WORKDIR /store
 COPY main.go main.go
 COPY pkg pkg
 
+# Test before you build
+RUN go test ./...
+
 # Create a static build of the package
 RUN CGO_ENABLED=0 go install -ldflags '-extldflags "-static"' .
 
