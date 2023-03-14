@@ -262,8 +262,6 @@ func setup() OrdersRepo {
 		},
 		[]string{"function"},
 	)
-	prometheus.MustRegister(redisRequestDuration)
-	prometheus.MustRegister(redisErrorReuests)
 
 	return OrdersRepo{
 		c: redisClient,

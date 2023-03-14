@@ -72,7 +72,7 @@ func NewOrdersRepo(addr, password string, poolSize, timeout int) *OrdersRepo {
 
 // Save stores an order in redis using its ID as the key
 func (r *OrdersRepo) Save(ctx context.Context, order domain.Order) error {
-	log.Trace("Start Save for %v", order)
+	log.Tracef("Start Save for %v", order)
 	timer := prometheus.NewTimer(r.Metrics.RedisLatency.WithLabelValues("Save"))
 	if !r.ValidOrder(order) {
 		r.Metrics.RedisErrors.WithLabelValues("SaveValidate").Inc()
@@ -88,13 +88,13 @@ func (r *OrdersRepo) Save(ctx context.Context, order domain.Order) error {
 
 	err = r.c.Set(ctx, order.ID, serlializedOrder, 0).Err()
 	timer.ObserveDuration()
-	log.Trace("End Save for %v", order)
+	log.Tracef("End Save for %v", order)
 	return err
 }
 
 // Get returns an order from the redis db by its ID
 func (r *OrdersRepo) Get(ctx context.Context, id string) (domain.Order, error) {
-	log.Trace("Start Get for %id", id)
+	log.Tracef("Start Get for %s", id)
 
 	timer := prometheus.NewTimer(r.Metrics.RedisLatency.WithLabelValues("Get"))
 	serlializedOrder, err := r.c.Get(ctx, id).Result()
@@ -117,13 +117,13 @@ func (r *OrdersRepo) Get(ctx context.Context, id string) (domain.Order, error) {
 		return domain.Order{}, err
 	}
 	timer.ObserveDuration()
-	log.Trace("End Get for %s", id)
+	log.Tracef("End Get for %s", id)
 	return order, nil
 }
 
 // ValidOrder checks if all required parts of an order exist
 func (r *OrdersRepo) ValidOrder(order domain.Order) bool {
-	log.Trace("Start ValidOrder for %v", order)
+	log.Tracef("Start ValidOrder for %v", order)
 	validate := validator.New()
 	err := validate.Struct(order)
 	if err != nil {
@@ -131,7 +131,7 @@ func (r *OrdersRepo) ValidOrder(order domain.Order) bool {
 		log.Errorf("Could not validate order: %v", order)
 		return false
 	}
-	log.Trace("End ValidOrder for %v", order)
+	log.Tracef("End ValidOrder for %v", order)
 	return true
 }
 
