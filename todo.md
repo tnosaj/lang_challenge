@@ -16,7 +16,7 @@ No particular order
 * make metrics an interface (swap out metric in 1 place)
 
 ### Logging
-* catch `err != nil` and log
+* ~catch `err != nil` and log~ [MR](https://github.com/tnosaj/lang_challenge/pull/3)
 * make loging an interface (swap out logging in 1 place)
 
 ### Tests
