@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -45,6 +46,7 @@ func NewServer(repo domain.OrdersRepo) *Server {
 
 // Create will create a new order and save it to redis, returning the order.ID
 func (s Server) Create(w http.ResponseWriter, r *http.Request) {
+	log.Trace("Start Create %v", r)
 	// timeout context
 	ctx, cancel := context.WithTimeout(r.Context(), time.Microsecond*200)
 	defer cancel()
@@ -57,14 +59,17 @@ func (s Server) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.Metrics.HttpErrors.WithLabelValues("Create").Inc()
 		w.WriteHeader(http.StatusInternalServerError)
+		log.Errorf("Create Failed: %s", err)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(order.ID))
+	log.Trace("End Create %v", r)
 }
 
 // Get will try to fetch the order by the ID provided in the url
 func (s Server) Get(w http.ResponseWriter, r *http.Request) {
+	log.Trace("Start Get %v", r)
 	// timeout context
 	ctx, cancel := context.WithTimeout(r.Context(), time.Microsecond*200)
 	defer cancel()
@@ -78,15 +83,19 @@ func (s Server) Get(w http.ResponseWriter, r *http.Request) {
 	} else {
 		s.Metrics.HttpErrors.WithLabelValues("BadRequest").Inc()
 		w.WriteHeader(http.StatusBadRequest)
+		log.Infof("Get Failed: Bad request - %s", r.URL.String())
 		return
 	}
 	order, err := s.repo.Get(ctx, id)
 	if err != nil {
 		if err.Error() == "not found" {
 			w.WriteHeader(http.StatusNotFound)
+			log.Infof("Get Failed: id %s not found", id)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Errorf("Get Failed: %s", err)
 		}
 		s.Metrics.HttpErrors.WithLabelValues("Get").Inc()
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -94,7 +103,10 @@ func (s Server) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.Metrics.HttpErrors.WithLabelValues("Get").Inc()
 		w.WriteHeader(http.StatusInternalServerError)
+		log.Errorf("Get Failed: Error marshaling json - %s", err)
 		return
 	}
 	w.Write(body)
+	log.Trace("End Get %v", r)
+	return
 }
